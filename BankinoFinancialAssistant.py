@@ -13,15 +13,17 @@ def persian_to_english_digits(text):
     return text.translate(translation_table)
     
 def draw_ascii_graph(data, title, y_label, height):
+    result = ""
+
     max_value = max(data)
     min_value = min(data)
     range_value = max_value - min_value
     #height = 10  # Height of the graph in rows
     scale = height / range_value if range_value > 0 else 1
 
-    print(f"\n{title}")
-    print(f"{y_label} (Max: {max_value:,}, Min: {min_value:,})")
-    print("+" + "-" * 40 + "+")
+    result += f"\n{title}"
+    result += f" {y_label} (Max: {max_value:,}, Min: {min_value:,})\n"
+    result += "+" + "-" * 40 + "+" + "\n"
     
     for i in range(height, -1, -1):
         line = f"{min_value + (i / scale):12,.0f} |"
@@ -37,9 +39,10 @@ def draw_ascii_graph(data, title, y_label, height):
                     line += "‗";
                 else:
                     line += "█"
-        print(line)
-    print("+" + "-" * 40 + "+")
-    print(" " * 14 + "".join(["|"] * len(data)))
+        result += line + "\n"
+    result += "+" + "-" * 40 + "+" + "\n"
+    result += " " * 14 + "".join(["|"] * len(data)) + "\n"
+    return result;
 
 def print_title(title):
     print()
@@ -65,6 +68,7 @@ parser.add_argument('filename', type=str, help="Name or address to the excel dat
 parser.add_argument('-s', '--start', type=valid_date, help="Start date of the data to take (YYYY-MM-DD)")
 parser.add_argument('-e', '--end', type=valid_date, help="End date of the data to take (YYYY-MM-DD)")
 parser.add_argument('-g', '--height', type=int, help="Height of the drawn graphs")
+parser.add_argument('-o', '--output', type=str, help="Name or address of the file to export the data.")
 
 args = parser.parse_args()
 
@@ -135,14 +139,37 @@ balance_data = (
     .tolist()
 )
 
+output = ""
+
 print(f"{len(df_filtered)} rows analyzed from {df_filtered['Date'][0].date()} to {df_filtered['Date'][len(df_filtered) - 1].date()}")
+output += f"{len(df_filtered)} rows analyzed from {df_filtered['Date'][0].date()} to {df_filtered['Date'][len(df_filtered) - 1].date()}" + "\n"
 
 # Draw ASCII graphs
-draw_ascii_graph(income_data, f"Income in {days} Days", "Incoming Transactions", height)
-draw_ascii_graph(costs_data, f"Costs in {days} Days", "Outgoing Transactions", height)
-draw_ascii_graph(balance_data, f"Balance in {days} Days", "Balance", height)
+income_graph = draw_ascii_graph(income_data, f"Income in {days} Days", "Incoming Transactions", height)
+output += income_graph + "\n"
+print(income_graph)
+
+costs_graph = draw_ascii_graph(costs_data, f"Costs in {days} Days", "Outgoing Transactions", height)
+output += costs_graph + "\n"
+print(costs_graph)
+
+balance_graph = draw_ascii_graph(balance_data, f"Balance in {days} Days", "Balance", height)
+output += balance_graph + "\n\n"
+print(balance_graph)
+
+print()
 
 # Print summary
 print(f"Summary of Transactions in the Past {days} Days:")
+output += (f"Summary of Transactions in the Past {days} Days:") + "\n"
+
 print(f"Total Income: {total_income:,} Rial")
+output += (f"Total Income: {total_income:,} Rial") + "\n"
+
 print(f"Total Costs: {total_costs:,} Rial")
+output += (f"Total Costs: {total_costs:,} Rial") + "\n"
+
+if (args.output is not None):
+    f = open(args.output, "w", encoding='utf-8')
+    f.write(output)
+    f.close()
